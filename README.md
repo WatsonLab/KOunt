@@ -26,7 +26,7 @@ wget https://figshare.com/s/72fe3ed7dfbbdcd8b1e5
 tar -xzvf KOunt_databases.tar
 gunzip KOunt_databases/*
 ```
-If you wish to update these databases, further information on how they were created is [here](docs/database_creation.txt).
+If you wish to update these databases, further information on how they were created is [here](https://github.com/WatsonLab/KOunt/blob/main/KOunt_database_preparation).
 
 ### Install Snakemake
 ```
