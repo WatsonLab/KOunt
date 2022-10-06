@@ -22,7 +22,7 @@ cd KOunt/
 ### Prepare the reference databases
 Download the KOunt UniProt and RNA databases.
 ```
-wget https://figshare.com/s/72fe3ed7dfbbdcd8b1e5
+wget https://figshare.com/articles/online_resource/KOunt_databases_v1_tar/21269715
 tar -xzvf KOunt_databases.tar
 gunzip KOunt_databases/*
 ```
