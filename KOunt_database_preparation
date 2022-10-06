@@ -1,0 +1,57 @@
+#Using the UniProt idmapping file 
+Download the UniProt idmapping file (https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz), gunzip and grep 'KEGG' to pull out all UniProt entries with a kegg gene ID
+Print the organism codes that have kegg gene IDs, sort and deduplicate
+Using KEGGREST in R:
+Use keggList("organism") to export all organisms in the KEGG db and export the organism codes for Prokaryotes and Fungi from this list
+Filter the organism codes that have kegg gene IDs, removing those that aren't from Prokaryotes/Fungi
+Use keggLink() to identify the KO for each of these KEGG genes, excluding those with RG0 codes
+Download the UniProt proteins you now have KOs for, eg. using curl -X GET --header 'Accept:text/x-fasta' 'https://www.ebi.ac.uk/proteins/api/proteins/gene_id'
+Make sure there are no hyphens, commas or spaces in any of the contig names in the fasta
+Add the KO to the end of each of the contig names in the fasta, using a hyphen as the delimiter
+
+#Using EC labels
+Access the uniprot cros-referenced databases with KEGG selected and the review status 'reviewed' (https://www.uniprot.org/uniprotkb?facets=reviewed%3Atrue&query=%28database%3AKEGG%29)
+Click 'customize columns'; untick gene names, reviewed, entry names, organism, length; tick 'Taxanomic lineage'; in external links search for and tick KEGG, and tick EC number
+Download, format tsv, download all. Once downloaded uncompress
+Filter the tsv by pulling out bacteria, archaea and eukaryotic microorganisms, printing the protein name, kegg ID and EC
+
+Pull out all genes with an EC id 
+Pull out remaining genes that have a KEGG gene ID
+Deduplicate with the genes found in the UniProt idmapping file 
+
+Pull out rows containing ',' - these have multiple KEGG hits that need splitting
+Split the genes with an EC and ',' using while read l; do scripts/using_keggs_with_multiple_genes.sh $l; done < input > output. Combine this with rows not containing ',' from genes with an EC
+Split the genes with a KEGG gene ID and ',' using: while read l; do scripts/using_keggs_with_multiple_genes.sh $l; done < input > output
+Combine this with rows not containing ',' from genes with a KEGG gene ID
+
+Using R and the KEGGREST package run keggLink() on the genes with an EC
+For the ECs that do not have a hit in the KEGG db, try searching for them with the KEGG gene ID
+Using R and the KEGGREST package run keggLink() on the genes with a KEGG gene ID
+Combine and reformat the output so you have a list of the UniProt gene IDs with their corresponding KO
+For genes with multiple KOs, all KOs must be on one line, separated by a '-' eg:
+GENE123	K00001-K00002
+Download all of the proteins that now have a KO eg. using curl -X GET --header 'Accept:text/x-fasta' 'https://www.ebi.ac.uk/proteins/api/proteins/gene_id'
+Make sure there are no hyphens, commas or spaces in any of the contig names in the fasta
+Add the KO to the end of each of the contig names in the fasta, using a hyphen as the delimiter
+
+Use diamond to prepare the protein database
+
+#RNA database
+Search the KEGG database to identify which KO each RNA belongs to
+Use keggLink() from the R package KEGGREST to print all KEGG genes in each RNA KO, excluding those with RG0 codes
+Use keggGet() to download the ntseq for each of the genes
+Download and gunzip the SILVA LSU and SSU truncated rRNA databases (https://ftp.arb-silva.de/current/Exports/SILVA_138.1_LSURef_NR99_tax_silva_trunc.fasta.gz) (wget https://ftp.arb-silva.de/current/Exports/SILVA_138.1_SSURef_NR99_tax_silva_trunc.fasta.gz)
+Downloaded all tRNAs from: http://lowelab.ucsc.edu/download/tRNAs/GtRNAdb-all-tRNAs.fa.gz
+Download all Rfam fastas that you've found a KO for eg. http://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/RF00001.fa.gz
+Run tRNAscan-SE with the RF00005 fasta to identify which tRNA each is
+Combine all the fastas and ensure no hyphens, commas or spaces are in the contig names. Also make sure each contig name is unique
+Add the KO for each RNA to the contig name, using a hyphen as the delimiter.
+For RNA that have multiple KOs include each of them in the contig name, separated by a hyphen eg. >contig1-K01981-K01985
+
+Prepare the mmseq database
+Run kallisto index with the fasta to make the kallisto reference database
+
+#Bedgraph
+Run samtools faidx on the protein and RNA database fastas
+Make the bedgraph eg. cut -f1-2 KOunt_RNA.fa.fai | awk '{print $1,"\t0\t",$2,"\t1"}' > KOunt_RNA.bdg
+Merge the protein and RNA bedgraphs and sort with: LC_ALL=C sort -k1,1 -k2,2n
