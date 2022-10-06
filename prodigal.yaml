@@ -1,0 +1,14 @@
+name: Prodigal
+channels:
+- bioconda
+- conda-forge
+- defaults
+- https://repo.anaconda.com/pkgs/main/
+dependencies:
+- prodigal=2.6.3=h516909a_2
+- _libgcc_mutex=0.1=conda_forge
+- _openmp_mutex=4.5=1_gnu
+- libgcc-ng=9.3.0=h5dbcf3e_17
+- libgomp=9.3.0=h5dbcf3e_17
+prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/env/Prodigal
+

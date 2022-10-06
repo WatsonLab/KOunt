@@ -1,0 +1,94 @@
+outdir: "out/outtest/" #output directory path, include a '/' at the end
+diamond_db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_AA_0922.dmnd"
+mmseq_db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_RNA_0922.mmseq"
+combined_bdg: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_all.bedgraph"
+kallisto: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_RNA_0922.kallisto"
+
+splitting_multiples: "" #if splitting protein coverage between multiple KOs leave blank. If grouping use #.
+grouping_multiples: "#" #if grouping proteins that have hits with multiple KOs leave blank. If splitting use #.
+
+#rule trim
+raw_reads: "reads/" #directory containing the raw reads, include a '/' at the end
+r1_ext: "_R1.fastq.gz" #R1 file extension after the sample id
+r2_ext: "_R2.fastq.gz" #R2 file extension after the sample id
+r1ad: "AGATCGGAAGAGC" #R1 adapter sequence
+r2ad: "AGATCGGAAGAGC" #R2 adapter sequence
+polyg: "" #enable polyG tail trimming, leave empty if not required
+qual: "" #disable quality trimming, leave empty if not required
+minlen: "60" #minimum read length allowed
+overlap: "4" #minimum length to detect overlapped regions
+trim_threads: "4" #number of threads
+
+#rule megahit
+mega_mem: "4.8e+10" #memory allocated to megahit
+mega_threads: "8" #number of threads
+mega_kmers: "27,37,47,57,67,77,87" #kmer sizes
+mega_len: "300" #minimum contig length
+
+#rule bwa
+bwa_threads: "4" #number of threads
+
+#rule coverage
+cov_split: "5000" #number of contigs to include in the split bams. If you're struggling with memory issues decrease this number
+
+#rule kegg_db
+db: "/home/jmattock/genus_watson_lab/Jenny/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
+
+#rule kofamscan
+kofamscan_threads: "4" #number of threads
+
+#rule cdhit
+cdhit_mem: "32000" #maximum memory allocated to cdhit
+cdhit_threads: "8" #number of threads
+
+#rule split_keggs
+split_num: "10" #the number of chunks to split the KOs into. If this is changed the config file for split needs amending to the new number of chunks
+
+#rule mmseq_keggs
+mmseq_keggs_threads: "8" #number of threads
+
+#rule mmseq_nohit
+mmseq_nohit_threads: "8" #number of threads
+
+#rule mmseq_cluster_count
+mmseq_cluster_threads: "8" #number of threads
+mmseq_cluster_mem: "128000" #maximum memory allocated to mmseq
+
+#rule cdhit_all
+tmp_cat: "" #directory to write the concatenated proteins to temporarily
+
+#mmseq_all
+mmseq_all_threads: "8" #number of threads
+
+#kofamscan_split
+kofamscan_split: "split_kofamscan/" #directory to write the split kofamscan results to temporarily
+
+#diamond_search
+dia_threads: "8" #number of threads
+min_qc: "90" #minimum percentage of the reference hit that the protein has to be
+max_qc: "110" #maximum percentage of the reference hit that the protein has to be
+min_pid: "80" #minimum percentage identity
+
+#barrnap
+barrnap: "4" #number of threads
+
+#nohit_annotate_reads
+nohit: "8" #number of threads
+
+#kallisto
+kallisto_threads: "8" #number of threads
+
+#unmapped_reads
+unmapped_threads: "8" #number of threads
+
+split:
+    '00': '00'
+    '01': '01'
+    '02': '02'
+    '03': '03'
+    '04': '04'
+    '05': '05'
+    '06': '06'
+    '07': '07'
+    '08': '08'
+    '09': '09'

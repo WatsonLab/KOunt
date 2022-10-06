@@ -1,0 +1,18 @@
+name: CDHit
+channels:
+- bioconda
+- conda-forge
+- defaults
+- https://repo.anaconda.com/pkgs/main/
+dependencies:
+- cd-hit=4.8.1=h8b12597_3
+- _libgcc_mutex=0.1=conda_forge
+- _openmp_mutex=4.5=1_gnu
+- libgcc-ng=9.3.0=h5dbcf3e_17
+- libgomp=9.3.0=h5dbcf3e_17
+- libstdcxx-ng=9.3.0=h2ae2ef3_17
+- llvm-meta=7.0.0=0
+- openmp=7.0.0=h2d50403_0
+- zlib=1.2.11=h516909a_1010
+prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/env/CDHit
+
