@@ -70,7 +70,8 @@ The following options can be amended in the config.yaml file:
 * `mmseq_db` the path to the KOunt MMseqs2 database (default: "KOunt_databases/KO_RNA_1.0.mmseq")<br />
 * `combined_bdg` the path to the KOunt database bedGraph file (default: "KOunt_databases/KO_RNA_DI_1.0.bedgraph")<br />
 * `kallisto` the path to the KOunt kallisto reference (default: "KOunt_databases/KO_RNA_kallisto_1.0")
-* `outdir` the path to the output directory (default: "out/")
+* `outdir` the path to the output directory (default: "out/")<br />
+
 The abundance of proteins that KofamScan annotates with multiple KOs can either be split between the KOs or summed with all other proteins with multiple hits into 'Multiples'
 * `splitting_multiples` splitting proteins between their KO hits (default: ""). Change to "#" if grouping multiples
 * `grouping_multiples` grouping proteins that have multiple KO hits (default: "#"). Change to "" if grouping multiples
