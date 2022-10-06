@@ -1,0 +1,36 @@
+name: diamond_bedtools
+channels:
+- conda-forge
+- biobakery
+- bioconda
+- defaults
+- https://repo.anaconda.com/pkgs/main/
+dependencies:
+- bedtools=2.29.2=hc088bd4_0
+- diamond=0.9.28=h56fc30b_0
+- mmseqs2=13.45111=pl5321hf1761c0_2
+- _libgcc_mutex=0.1=conda_forge
+- _openmp_mutex=4.5=1_gnu
+- boost-cpp=1.70.0=h7b93d67_3
+- bzip2=1.0.8=h516909a_3
+- ca-certificates=2021.10.8=ha878542_0
+- gawk=5.1.0=h7f98852_0
+- gettext=0.19.8.1=h73d1719_1008
+- icu=67.1=he1b5a44_0
+- libffi=3.4.2=h7f98852_5
+- libgcc-ng=11.2.0=h1d223b6_14
+- libgomp=9.3.0=h24d8f2e_16
+- libidn2=2.3.2=h7f98852_0
+- libnsl=2.0.0=h7f98852_0
+- libstdcxx-ng=11.2.0=he4da1e4_14
+- libunistring=0.9.10=h7f98852_0
+- libzlib=1.2.11=h166bdaf_1014
+- lz4-c=1.9.2=he1b5a44_3
+- openssl=3.0.2=h166bdaf_1
+- perl=5.32.1=2_h7f98852_perl5
+- wget=1.20.3=ha35d2d1_1
+- xz=5.2.5=h516909a_1
+- zlib=1.2.11=h516909a_1009
+- zstd=1.4.5=h6597ccf_2
+prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/env/diamond_bedtools
+

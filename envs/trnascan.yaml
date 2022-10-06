@@ -1,0 +1,17 @@
+name: trna_scan
+channels:
+- conda-forge
+- biobakery
+- bioconda
+- defaults
+- https://repo.anaconda.com/pkgs/main/
+dependencies:
+- infernal=1.1.2=h516909a_3
+- trnascan-se=2.0.7=pl526h516909a_0
+- _libgcc_mutex=0.1=conda_forge
+- _openmp_mutex=4.5=1_gnu
+- libgcc-ng=9.3.0=h2828fa1_18
+- libgomp=9.3.0=h2828fa1_18
+- perl=5.26.2=h36c2ea0_1008
+prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/env/trna_scan
+
