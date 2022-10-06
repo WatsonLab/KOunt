@@ -38,6 +38,7 @@ conda env create -f envs/snakemake.yaml
 source activate snakemake
 snakemake --use-conda --conda-create-envs-only
 ```
+If using Snakemake without mamba beinng installed include the option ```--conda-frontend conda```
 
 ## Running KOunt
 Amend the options config file, config.yaml, with your fastq file locations and extensions.
