@@ -1092,6 +1092,7 @@ rule abundance_matrix_annotate_with_mapping:
   input:
     kofam=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_KOunt", id=IDS),
     nohit_p=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt", id=IDS),
+    nohit_r=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts", id=IDS),
     rna=expand(f"{outdir}barrnap/{{id}}_rna_KOunt", id=IDS),
     kal=expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt", id=IDS),
     unmap=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_unmapped_KOunt", id=IDS),
@@ -1108,6 +1109,7 @@ rule abundance_matrix_annotate_with_mapping:
     mkdir {params.tmp}
     for i in {input.kofam}; do cp $i {params.tmp}; done
     for i in {input.nohit_p}; do cp $i {params.tmp}; done
+    for i in {input.nohit_r}; do cp $i {params.tmp}; done
     for i in {input.rna}; do cp $i {params.tmp}; done
     for i in {input.kal}; do cp $i {params.tmp}; done
     for i in {input.unmap}; do cp $i {params.tmp}; done
@@ -1124,6 +1126,7 @@ rule abundance_matrix_annotate_with_mapping_noclust:
   input:
     kofam=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noc_KOunt", id=IDS),
     nohit_p=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt", id=IDS),
+    nohit_r=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts", id=IDS),
     rna=expand(f"{outdir}barrnap/{{id}}_rna_KOunt", id=IDS),
     kal=expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt", id=IDS),
     unmap=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_unmapped_KOunt", id=IDS),
@@ -1140,6 +1143,7 @@ rule abundance_matrix_annotate_with_mapping_noclust:
     mkdir {params.tmp}
     for i in {input.kofam}; do cp $i {params.tmp}; done
     for i in {input.nohit_p}; do cp $i {params.tmp}; done
+    for i in {input.nohit_r}; do cp $i {params.tmp}; done
     for i in {input.rna}; do cp $i {params.tmp}; done
     for i in {input.kal}; do cp $i {params.tmp}; done
     for i in {input.unmap}; do cp $i {params.tmp}; done
