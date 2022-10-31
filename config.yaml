@@ -1,8 +1,8 @@
-outdir: "out/outtest/" #output directory path, include a '/' at the end
-diamond_db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_AA_0922.dmnd"
-mmseq_db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_RNA_0922.mmseq"
-combined_bdg: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_all.bedgraph"
-kallisto: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/KOunt_databases_09/KOunt_RNA_0922.kallisto"
+outdir: "out/" #output directory path, include a '/' at the end
+diamond_db: "KOunt_databases_v1/KOunt_AA_1.dmnd"
+mmseq_db: "KOunt_databases_v1/KOunt_RNA_1.mmseq"
+combined_bdg: "KOunt_databases_v1/KOunt_all_1.bedgraph"
+kallisto: "KOunt_databases_v1/KOunt_RNA_1.kallisto"
 
 splitting_multiples: "" #if splitting protein coverage between multiple KOs leave blank. If grouping use #.
 grouping_multiples: "#" #if grouping proteins that have hits with multiple KOs leave blank. If splitting use #.
@@ -32,7 +32,7 @@ bwa_threads: "4" #number of threads
 cov_split: "5000" #number of contigs to include in the split bams. If you're struggling with memory issues decrease this number
 
 #rule kegg_db
-db: "/home/jmattock/genus_watson_lab/Jenny/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
+db: "out/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
 
 #rule kofamscan
 kofamscan_threads: "4" #number of threads
