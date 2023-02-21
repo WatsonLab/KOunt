@@ -25,7 +25,7 @@ Download the KOunt UniProt and RNA databases.
 wget https://figshare.com/ndownloader/files/37711530
 mv 37711530 KOunt_databases.tar
 tar -xzvf KOunt_databases.tar
-gunzip KOunt_databases/*
+gunzip KOunt_databases_v1/*
 ```
 If you wish to update these databases, further information on how they were created is available [here](https://github.com/WatsonLab/KOunt/blob/main/KOunt_database_preparation).
 
