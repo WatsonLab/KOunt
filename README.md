@@ -3,7 +3,7 @@ Snakemake pipeline calculating KEGG orthologue abundance in metagenomic sequence
 
 ## Documentation
 KOunt is a Snakemake pipeline that calculates the abundance of KEGG orthologues (KOs) in metagenomic sequence data. KOunt takes raw paired-end reads and quality trims, assembles, predicts proteins and annotates them. The reads are mapped to the assembly and protein coverage calculated. The annotated proteins are clustered at 100%, 90% and 50% identity within each KO to quantify their diversity.
-All predicted proteins that don’t have a KO hit are called ‘NoHit’. The NoHit proteins are blasted against a custom uniprot database annotated with a KO and the nucleotides against a custom RNA database. Unannotated proteins are screened for rRNA and tRNA using Barrnap and tRNAscan-SE. Reads mapped to NoHit proteins that remain unannotated are blasted against the KOunt databases and RNA quantified in the remaining reads.
+All predicted proteins that don’t have a KO hit are called 'NoHit’. The NoHit proteins are blasted against a custom UniProt database annotated with a KO and the nucleotides against a custom RNA database. Unannotated proteins are screened for rRNA and tRNA using Barrnap and tRNAscan-SE. Reads mapped to NoHit proteins that remain unannotated and unmapped reads are blasted against the KOunt databases and RNA quantified in the remaining reads.
 
 ## Workflow
 <img src="./workflow.png">
@@ -26,40 +26,50 @@ wget https://figshare.com/ndownloader/files/37711530
 mv 37711530 KOunt_databases.tar
 tar -xzvf KOunt_databases.tar
 gunzip KOunt_databases_v1/*
+rm KOunt_databases.tar
 ```
 If you wish to update these databases, further information on how they were created is available [here](https://github.com/WatsonLab/KOunt/blob/main/KOunt_database_preparation).
 
 ### Install Snakemake
 ```
-conda env create -f envs/snakemake.yaml
+conda create -n snakemake_mamba -c conda-forge -c bioconda mamba
+conda activate snakemake_mamba
+mamba install -c bioconda snakemake
 ```
 
 ### Install the conda environments
 ```
 source activate snakemake
-snakemake --use-conda --conda-create-envs-only
+snakemake --use-conda --conda-create-envs-only --cores 1
 ```
-If using Snakemake without a mamba installation include the option ```--conda-frontend conda```
+
+### Test installation
+Leave the raw reads location in the config at default and perform a dry-run with the reads subsampled from ERR2027889. Then run the pipeline. With 8 cores it should take approximately 20 minutes.
+```
+snakemake -k --ri --use-conda -n
+snakemake -k --ri --use-conda --cores 8
+```
 
 ## Running KOunt
-Amend the options config file, config.yaml, with your fastq file locations and extensions. If using Snakemake without a mamba installation include the option ```--conda-frontend conda``` in all Snakemake commands. To use the default rule all in the Snakefile and run the entire pipeline do:
+Amend the options config file, `config.yaml`, with your fastq file locations and extensions. KOunt expects the raw reads to be in a directory with the same sample name eg. `ERR2027889/ERR2027889_R1.fastq.gz`. It runs the pipeline on all the samples in the directory you specify in the config file.
+To use the default rule all in the Snakefile specify the number of cores you have available and run the entire pipeline with:
 ```
-snakemake -k --ri --use-conda
+snakemake -k --ri --use-conda --cores 8
 ```
 
 If you wish to only run part of the pipeline you can specify another rule all.
 
 To perform all steps but the protein clustering use:
 ```
-snakemake -k --ri --use-conda all_without_clustering
+snakemake -k --ri --use-conda all_without_clustering --cores 8
 ```
-To perform all steps but protein clustering and read/protein annotation with the KOunt database:
+To perform all steps but protein clustering and read/protein annotation with the KOunt reference databases:
 ```
-snakemake -k --ri --use-conda all_without_reference
+snakemake -k --ri --use-conda all_without_reference --cores 8
 ```
 To perform all steps but protein clustering and RNA abundance quantification:
 ```
-snakemake -k --ri --use-conda all_without_RNA
+snakemake -k --ri --use-conda all_without_RNA --cores 8
 ```
 ## Options
 The following options can be amended in the config.yaml file:
@@ -72,6 +82,10 @@ The following options can be amended in the config.yaml file:
 * `combined_bdg` the path to the KOunt database bedGraph file (default: "KOunt_databases/KO_RNA_DI_1.0.bedgraph")<br />
 * `kallisto` the path to the KOunt kallisto reference (default: "KOunt_databases/KO_RNA_kallisto_1.0")
 * `outdir` the path to the output directory (default: "out/")<br />
+
+The read ids in the trimmed reads are shortened up to the first space and /1 or /2 added to the end if not already present. By default the read ids are compared to ensure all ids are unique but this can be changed if you're sure they will be
+* `checking_fqs` running fastq_utils to check that the read ids are unique and the fastq is valid (default: ""). Change to "#" if not checking
+* `not_checking_fqs` not running fastq_utils on the reads (default: "#"). Change to "" if checking
 
 The abundance of proteins that KofamScan annotates with multiple KOs can either be split between the KOs or summed with all other proteins with multiple hits into 'Multiples'
 * `splitting_multiples` splitting proteins between their KO hits (default: ""). Change to "#" if grouping multiples
@@ -133,12 +147,18 @@ The abundance of proteins that KofamScan annotates with multiple KOs can either 
 * `unmapped_threads` the number of threads (default: “8”)
 
 ## Output
+#### Default
 `Results/KOunts_Kofamscan.csv` KO abundance in each sample, calculated by Kofamscan, without read mapping
 `Results/All_KOunts_nohit_unmapped_default.csv` Final KO abundance in each sample<br />
 `Results/Number_of_clusters.csv` Number of clusters of proteins at 90% and 50% sequence identity in each KO, the number of clusters that contain multiple proteins and the number of singleton clusters
 
+#### Without clustering
+`Results/KOunts_Kofamscan.csv` KO abundance in each sample, calculated by Kofamscan, without read mapping
+`Results/All_KOunts_nohit_unmapped_no_clustering.csv` Final KO abundance in each sample<br />
 
+#### Without reference databases
+`Results/All_KOunts_without_reference.csv` Final KO abundance in each sample calculated by Kofamscan, without read mapping<br />
 
-
-
-
+#### Without RNA
+`Results/KOunts_Kofamscan_without_clustering.csv` KO abundance in each sample, calculated by Kofamscan, without read mapping
+`Results/All_KOunts_without_RNA.csv` Final KO abundance in each sample<br />
