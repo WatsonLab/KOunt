@@ -215,4 +215,3 @@ dependencies:
     - yte==1.5.1
     - zipp==3.14.0
     - zstandard==0.19.0
-prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/envs/snakemake_mamba
