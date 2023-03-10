@@ -16,4 +16,3 @@ dependencies:
   - llvm-openmp=8.0.1=hc9558a2_0
   - openmp=8.0.1=0
   - zlib=1.2.13=h166bdaf_4
-prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/envs/cdhit_KOunt
