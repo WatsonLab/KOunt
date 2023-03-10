@@ -29,4 +29,3 @@ dependencies:
   - seqtk=1.3=h7132678_4
   - tk=8.6.12=h27826a3_0
   - zlib=1.2.13=h166bdaf_4
-prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/envs/kallisto_KOunt
