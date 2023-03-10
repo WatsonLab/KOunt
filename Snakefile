@@ -4,7 +4,7 @@ shell.prefix("source $HOME/.bashrc; ")
 configfile: "config.yaml"
 PREFIX = config['raw_reads']
 SUFFIX = config['r1_ext']
-IDS, = glob_wildcards(f'{PREFIX}{{id}}{SUFFIX}')
+IDS = os.listdir(f'{PREFIX}')
 
 bwa_threads = config['bwa_threads']
 cdhit_mem = config['cdhit_mem']
@@ -46,6 +46,8 @@ barrnap = config['barrnap']
 nohit = config['nohit']
 splitting_multiples = config['splitting_multiples']
 grouping_multiples = config['grouping_multiples']
+checking_fqs = config['checking_fqs']
+not_checking_fqs = config['not_checking_fqs']
 
 #default
 rule all:
@@ -90,12 +92,12 @@ rule all_without_clustering:
     expand(f"{outdir}Kofamscan/{{id}}/{{id}}", id=IDS),
     f"{outdir}Results/KOunts_Kofamscan_without_clustering.csv",
     expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noc_KOunt", id=IDS),
-    expand(f"{outdir}Touch/nohit_fa_{{id}}", id=IDS),    
-    expand(f"{outdir}barrnap/nohit_{{id}}_all_output", id=IDS),
-    expand(f"{outdir}trnascan/{{id}}", id=IDS),
-    expand(f"{outdir}Touch/{{id}}_nohit_fastq", id=IDS),
-    expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts", id=IDS),
-    expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt", id=IDS),
+    expand(f"{outdir}Touch/nohit_fa_{{id}}_noc", id=IDS),    
+    expand(f"{outdir}barrnap/nohit_{{id}}_all_output_noc", id=IDS),
+    expand(f"{outdir}trnascan/{{id}}_noc", id=IDS),
+    expand(f"{outdir}Touch/{{id}}_nohit_fastq_noc", id=IDS),
+    expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts_noc", id=IDS),
+    expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt_noc", id=IDS),
     expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_unmapped_KOunt", id=IDS),
     expand(f"{outdir}kallisto/{{id}}_unmapped_kallisto_still_missing_KOunt", id=IDS),
     expand(f"{outdir}Results/All_KOunts_nohit_unmapped_no_clustering.csv", id=IDS)
@@ -136,9 +138,10 @@ rule all_without_RNA:
 
 rule trim:
   input:
-    r1 = f'{raw_reads}{{id}}{r1_ext}',
-    r2 = f'{raw_reads}{{id}}{r2_ext}'
-  output: f'{outdir}Touch/trim_{{id}}'
+    r1 = f'{raw_reads}{{id}}/{{id}}{r1_ext}',
+    r2 = f'{raw_reads}{{id}}/{{id}}{r2_ext}',
+  output: 
+    f'{outdir}Touch/trim_{{id}}',
   params:
     trim = f'{outdir}trimmed',
     trim_id = f'{outdir}trimmed/{{id}}',
@@ -150,14 +153,23 @@ rule trim:
     min = f'{minlen}',
     over = f'{overlap}',
     r1 = f'{outdir}trimmed/{{id}}/{{id}}.trimmed.R1.fastq.gz',
-    r2 = f'{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz'
-  conda: "envs/fastp.yaml"
+    r2 = f'{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz',
+    tmp_r1 = f'{outdir}trimmed/{{id}}/{{id}}.trimmed_tmp.R1.fastq.gz',
+    tmp_r2 = f'{outdir}trimmed/{{id}}/{{id}}.trimmed_tmp.R2.fastq.gz',
+    checking_fqs=f"{checking_fqs}",
+    not_checking_fqs=f"{not_checking_fqs}"
+  conda: "envs/fastp_utils_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.trim}
     mkdir -p {params.trim_id}
     fastp -i {input.r1} -o {params.r1} -I {input.r2} -O {params.r2} --adapter_sequence {params.r1_adapter} --adapter_sequence_r2 {params.r2_adapter} {params.quality} -l {params.min} -w {params.threads} --overlap_len_require {params.over} {params.polyG} --json /dev/null --html /dev/null
-    touch {output}
+    zcat {params.r1} | perl -pe 's/ .*// if /^@/' | sed '/\/1/! s/^@.*/&\/1/' | gzip > {params.tmp_r1}
+    zcat {params.r2} | perl -pe 's/ .*// if /^@/' | sed '/\/2/! s/^@.*/&\/2/' | gzip > {params.tmp_r2}
+    mv {params.tmp_r1} {params.r1}
+    mv {params.tmp_r2} {params.r2}
+    {params.checking_fqs} if fastq_info {params.r1} {params.r2}; then touch {output}; else echo "read names not unique or fastqs invalid"; fi #include if checking read ids
+    {params.not_checking_fqs} touch {output} #include if not checking read ids
     '''
 
 rule megahit:
@@ -173,7 +185,7 @@ rule megahit:
     threads=f'{mega_threads}'
   output:
     final=f'{outdir}assemblies/{{id}}/{{id}}.contigs.fa'
-  conda: "envs/Megahit.yaml"
+  conda: "envs/megahit_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.mega}
@@ -191,7 +203,7 @@ rule prodigal:
     filtered_nuc=f'{outdir}Prodigal_Outputs/filtered_nucleotides/{{id}}/{{id}}.fa',
     filtered_aa=f'{outdir}Prodigal_Outputs/filtered_aminos/{{id}}/{{id}}.faa',
     filtered_gff=f'{outdir}Prodigal_Outputs/filtered_gffs/{{id}}/{{id}}.gff'
-  conda: "envs/prodigal.yaml"
+  conda: "envs/prodigal_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.output}
@@ -217,7 +229,7 @@ rule bwa:
     r2 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz",
     bam = f"{outdir}Abundance/{{id}}/{{id}}.bam",
     threads=f"{bwa_threads}"
-  conda: "envs/bwa_map.yaml"
+  conda: "envs/bwa_map_KOunt.yaml"
   shell:
     '''
     bwa index {input.fasta}
@@ -237,6 +249,7 @@ rule bamdeal:
     wget -P {params.bamdeal_location} {params.download}
     tar -C {params.bamdeal_location} -zxvf {params.bamdeal_location}v0.24.tar.gz
     chmod 755 {output.bamdeal}
+    rm {params.bamdeal_location}v0.24.tar.gz
     '''
 
 rule coverage:
@@ -256,7 +269,7 @@ rule coverage:
     split=f"{cov_split}",
     mapped=f"{outdir}Abundance/{{id}}/{{id}}_mapped_reads"
   threads:1
-  conda: "envs/bedtools_samtools.yaml"
+  conda: "envs/bedtools_samtools_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.wd}
@@ -268,8 +281,8 @@ rule coverage:
     for file in {params.wd}??; do ./scripts/bedtools.sh $file {params.gff} {params.wd}; done > {output.coverage}
     bedtools bamtobed -i {params.bam} > {params.bam}.bed
     rm {params.bam}
-    sort -k1,1 -k2,2n {params.bam}.bed > {params.bam}.bed_sorted
-    sort -k1,1 -k4,4n {input.filtered_gff} > {input.filtered_gff}_sorted
+    LC_ALL=C sort -k1,1 -k2,2n {params.bam}.bed > {params.bam}.bed_sorted
+    LC_ALL=C sort -k1,1 -k4,4n {input.filtered_gff} > {input.filtered_gff}_sorted
     bedtools intersect -a {input.filtered_gff}_sorted -b {params.bam}.bed_sorted -wb -sorted | awk '{{print $13}}' | sort -S 50% | uniq > {params.mapped}
     rm {input.filtered_gff}_sorted
     rm {params.bam}.bed_sorted
@@ -298,7 +311,7 @@ rule coverage_without_reference:
     gff=f"{outdir}Prodigal_Outputs/filtered_gffs/",
     split=f"{cov_split}"
   threads:1
-  conda: "envs/bedtools_samtools.yaml"
+  conda: "envs/bedtools_samtools_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.wd}
@@ -333,11 +346,13 @@ rule kegg_db:
     wget -P {params.location} {params.ko_list}
     tar -C {params.location} -xf {params.location}/profiles.tar.gz
     gunzip {params.location}/ko_list.gz
+    rm {params.location}/profiles.tar.gz
     '''
 
 rule kofamscan:
   input:
-    filtered_aa=f"{outdir}Prodigal_Outputs/filtered_aminos/{{id}}/{{id}}.faa"
+    filtered_aa=f"{outdir}Prodigal_Outputs/filtered_aminos/{{id}}/{{id}}.faa",
+    touch=f"{db}touch"
   params:
     profiles=f"{db}profiles/",
     list=f"{db}ko_list",
@@ -345,7 +360,7 @@ rule kofamscan:
     threads=f"{kofamscan_threads}"
   output:
     ko=f"{outdir}Kofamscan/{{id}}/{{id}}"
-  conda:"envs/kofamscan_hmmr.yaml"
+  conda: "envs/kofamscan_hmmr_KOunt.yaml"
   shell:
     '''
     exec_annotation --cpu {params.threads} -p {params.profiles} -k {params.list} -o {output.ko} --tmp-dir {params.tmp} {input.filtered_aa}
@@ -417,8 +432,7 @@ rule kofamscan_results_noref:
     grouping_multiples=f"{grouping_multiples}"
   output:
     out=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noref",
-    KOunt=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noref_KOunt",
-    nohit=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_noref"
+    KOunt=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noref_KOunt"
   shell:
     '''
     grep '^\*' {input.ko} | awk '{{print $2 "\t" $3}}' > {output.out}
@@ -429,7 +443,6 @@ rule kofamscan_results_noref:
     {params.grouping_multiples}rm {output.out}_duplicates #include if grouping multiples
     {params.grouping_multiples}rm {output.out}_multiples #include if grouping multiples
     {params.grouping_multiples}awk '{{print $2 "\t" $3}}' {output.out}_coverage | awk '{{a[$2]+=$1}}END{{for(i in a) print i,a[i]}}' > {output.KOunt} #include if grouping multiples
-    grep NoHit {output.out}_coverage | awk '{{print $1}}' > {output.nohit}
     rm {output.out}_coverage
     '''
 
@@ -521,7 +534,7 @@ rule cdhit:
     memory=f"{cdhit_mem}",
     threads=f"{cdhit_threads}"
   output: f"{outdir}Touch/cdhit"
-  conda:"envs/CDHit.yaml"
+  conda: "envs/cdhit_KOunt.yaml"
   
   shell:
     '''
@@ -543,7 +556,7 @@ rule split_keggs:
   shell: 
     '''
     mkdir -p {params.lists}
-    {params.splitting_multiples}(cd {params.sample} && ls K*_1.0) > keggslist #include if splitting multiples
+    (cd {params.sample} && ls K*_1.0) > keggslist
     {params.grouping_multiples}(cd {params.sample} && ls Multiple*1.0) >> keggslist #include if grouping multiples
     split -d --number=l/{params.num} keggslist {params.lists}/keggslist
     rm keggslist
@@ -561,7 +574,7 @@ rule mmseq_keggs:
     mmseq=f"{outdir}MMSeq_Outputs/By_Sample/",
     threads=f"{mmseq_keggs_threads}"
   output: "{outdir}Touch/mmseq_kegg_{split}"
-  conda:"envs/mmseq.yaml"
+  conda: "envs/mmseqs2_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.mm}
@@ -582,7 +595,7 @@ rule mmseq_nohit:
     mmseq=f"{outdir}MMSeq_Outputs/By_Sample/",
     threads=mmseq_nohit_threads
   output: f"{outdir}Touch/mmseq_nohit"
-  conda:"envs/mmseq.yaml"
+  conda: "envs/mmseqs2_KOunt.yaml"
   shell:
     '''
     mkdir -p {params.mm}
@@ -598,12 +611,14 @@ rule mmseq_cluster_count:
     keggs=expand("{outdir}Touch/mmseq_kegg_{split}", outdir=config["outdir"], split=config['split']),
     nohit=f"{outdir}Touch/mmseq_nohit"
   params:
-    mmseq=f"{outdir}MMSeq_Outputs/By_Sample/"
+    mmseq=f"{outdir}MMSeq_Outputs/By_Sample/",
+    list=f"{outdir}lists/"
   output:f"{outdir}Results/Number_of_clusters.csv"
   shell:
     '''
     echo -e "KEGG,Number of clusters,Number of singletons,Number with multiple genes,Number of proteins\n$(cat {params.mmseq}*txt)" > {output}
     rm {params.mmseq}*txt
+    rm -r {params.list}
     '''
 
 rule nohit_fastas:
@@ -616,6 +631,24 @@ rule nohit_fastas:
     fa=f"{outdir}diamond/NoHit_{{id}}.fa",
     wd=f"{outdir}diamond/"
   output:f"{outdir}Touch/nohit_fa_{{id}}"
+  shell:
+    '''
+    mkdir -p {params.wd}
+    ./scripts/extracting_fastas.sh {input.nohit} {input.faa} > {params.faa}
+    ./scripts/extracting_fastas.sh {input.nohit} {input.fa} > {params.fa}
+    touch {output}
+    '''
+
+rule nohit_fastas_noclustering:
+  input:
+    nohit=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_noc",
+    faa=f"{outdir}Prodigal_Outputs/filtered_aminos/{{id}}/{{id}}.faa",
+    fa=f"{outdir}Prodigal_Outputs/filtered_nucleotides/{{id}}/{{id}}.fa"
+  params:
+    faa=f"{outdir}diamond/NoHit_{{id}}.faa",
+    fa=f"{outdir}diamond/NoHit_{{id}}.fa",
+    wd=f"{outdir}diamond/"
+  output:f"{outdir}Touch/nohit_fa_{{id}}_noc"
   shell:
     '''
     mkdir -p {params.wd}
@@ -652,7 +685,7 @@ rule diamond_search:
     ko=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_ko",
     KOunt=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt",
     no=f"{outdir}diamond/still_nohit_{{id}}",
-    mmseq=f"{outdir}mmseqs/nohitp_{{id}}"
+    mmseq=f"{outdir}MMSeq_Outputs/{{id}}/nohitp_{{id}}"
   params:
     faa=f"{outdir}diamond/NoHit_{{id}}.faa",
     fa=f"{outdir}diamond/NoHit_{{id}}.fa",
@@ -666,7 +699,57 @@ rule diamond_search:
     max_qc=f"{max_qc}",
     min_pid=f"{min_pid}",
     threads=f"{dia_threads}"
-  conda: "envs/diamond_bedtools_mmseq2.yaml"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
+  shell:
+    '''
+    diamond blastp --query {params.faa} --threads {params.threads} --outfmt {params.of} -d {params.db} > {output.raw}
+    mmseqs easy-search {params.fa} {params.rna} {output.mmseq} {params.tmp} --threads {params.threads} --search-type 3 --format-output {params.ofm}
+    cat {output.raw} {output.mmseq} > {params.cat}
+    awk -F '\t' '{{ print $0 "\t" ($4/$5) * 100 }}' {params.cat} | gawk -F '\t' '$NF>{params.min_qc} {{print $0}}' | gawk -F '\t' '$NF<{params.max_qc} {{print $0}}' | gawk -F '\t' '$3>{params.min_pid} {{print $0}}' > {output.fil}
+    awk '! a[$1]++' {output.fil} > {output.fil}_tmp
+    awk '{{print $1 "," $3 "," $10 "\t" $2}}' {output.fil}_tmp > {output.fil}_tmp.1
+    awk '{{print $1 "," $3 "," $10 "\t" $2}}' {output.fil} > {output.fil}.1
+    awk 'NR==FNR{{a[$1];next}}$1 in a' {output.fil}_tmp.1 {output.fil}.1 | tr ',' '\t' > {output.best}
+    rm {output.fil}_tmp.1
+    rm {output.fil}.1
+    awk -F '_' '{{print $0 "\t" $NF}}' {output.best} | awk '{{print $1 "\t" $NF}}' | sort | uniq > {output.ko}
+    awk '{{print $1}}' {output.ko} | uniq -c | awk '{{print $2 "\t" $1}}' > {output.ko}_count
+    awk 'NR==FNR{{a[$1]=$2;next}}{{print $0,a[$1]}}' {input.cov} {output.ko} | awk 'NR==FNR{{a[$1]=$2;next}}{{print $0,a[$1]}}' {output.ko}_count - | awk '{{print $1 "\t" $2 "\t" ($3/$4)}}' > {output.ko}_coverage
+    awk '{{a[$2]+=$3}}END{{for(i in a) print i,a[i]}}' {output.ko}_coverage | awk -F'-' '{{print $0 "\t" NF-1}}' | awk -v OFMT='%.5f' '{{print $1"\t",($2/$3)}}' | cut -d- -f2- | awk '{{gsub(/-/,"\t"$2",")}}1' | tr ',' '\n' | awk -v OFMT='%.5f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.KOunt}
+    awk '{{print $1}}' {output.ko}_coverage > {output.ko}_coverage_tmp
+    cat {input.nohit} {output.ko}_coverage_tmp | sort | uniq -u > {output.no}
+    rm {output.ko}_coverage_tmp
+    rm {output.ko}_coverage
+    rm {output.ko}_count
+    '''
+
+rule diamond_search_noclustering:
+  input:
+    nohit=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_noc",
+    cov=f"{outdir}Abundance_Outputs/{{id}}/{{id}}_coverage",
+    touch=f"{outdir}Touch/nohit_fa_{{id}}_noc"
+  output: 
+    raw=f"{outdir}diamond/NoHit_{{id}}_noc",
+    fil=f"{outdir}diamond/{{id}}/{{id}}_filtered_noc",
+    best=f"{outdir}diamond/NoHit_{{id}}_besthits_noc",
+    ko=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_ko_noc",
+    KOunt=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt_noc",
+    no=f"{outdir}diamond/still_nohit_{{id}}_noc",
+    mmseq=f"{outdir}MMSeq_Outputs/{{id}}/nohitp_{{id}}_noc"
+  params:
+    faa=f"{outdir}diamond/NoHit_{{id}}.faa",
+    fa=f"{outdir}diamond/NoHit_{{id}}.fa",
+    rna=f"{mmseq_db}",
+    of="6 qseqid sseqid pident qlen slen qstart qend sstart send evalue",
+    ofm="query,target,pident,qlen,tlen,qstart,qend,tstart,tend,evalue",
+    db=f"{diamond_db}",
+    tmp=f"{outdir}diamond/{{id}}_tmp",
+    cat=f"{outdir}diamond/NoHit_{{id}}_cat",
+    min_qc=f"{min_qc}",
+    max_qc=f"{max_qc}",
+    min_pid=f"{min_pid}",
+    threads=f"{dia_threads}"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
   shell:
     '''
     diamond blastp --query {params.faa} --threads {params.threads} --outfmt {params.of} -d {params.db} > {output.raw}
@@ -713,7 +796,7 @@ rule diamond_search_without_RNA:
     max_qc=f"{max_qc}",
     min_pid=f"{min_pid}",
     threads=f"{dia_threads}"
-  conda: "envs/diamond_bedtools_mmseq2.yaml"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
   shell:
     '''
     diamond blastp --query {params.faa} --threads {params.threads} --outfmt {params.of} -d {params.db} > {output.raw}
@@ -742,7 +825,7 @@ rule barrnap:
   params:
     nohit=f"{outdir}diamond/NoHit_{{id}}.fa",
     threads=f"{barrnap}"
-  conda:"envs/barrnap.yaml"
+  conda: "envs/barrnap_KOunt.yaml"
   output:
     mito=f"{outdir}barrnap/nohit_{{id}}_mito_barrnap.gff",
     bac=f"{outdir}barrnap/nohit_{{id}}_bac_barrnap.gff",
@@ -759,11 +842,45 @@ rule barrnap:
     cat {output.mito} {output.bac} {output.arc} {output.euk} | grep -v gff | awk -F'\t|;' 'BEGIN{{OFS="\t"}} NR>1{{print $1,$4,$5,$9}}' > {output.all}
     '''
 
+rule barrnap_noclustering:
+  input:
+    ann=f"{outdir}diamond/still_nohit_{{id}}_noc",
+    fa=f"{outdir}Prodigal_Outputs/filtered_nucleotides/{{id}}/{{id}}.fa"
+  params:
+    nohit=f"{outdir}diamond/NoHit_{{id}}.fa",
+    threads=f"{barrnap}"
+  conda: "envs/barrnap_KOunt.yaml"
+  output:
+    mito=f"{outdir}barrnap/nohit_{{id}}_mito_barrnap.gff_noc",
+    bac=f"{outdir}barrnap/nohit_{{id}}_bac_barrnap.gff_noc",
+    arc=f"{outdir}barrnap/nohit_{{id}}_arc_barrnap.gff_noc",
+    euk=f"{outdir}barrnap/nohit_{{id}}_euk_barrnap.gff_noc",
+    all=f"{outdir}barrnap/nohit_{{id}}_all_output_noc"
+  shell:
+    '''
+    ./scripts/extracting_fastas.sh {input.ann} {input.fa} > {params.nohit}
+    barrnap --threads {params.threads} --kingdom mito {params.nohit} > {output.mito}
+    barrnap --threads {params.threads} --kingdom bac {params.nohit} > {output.bac}
+    barrnap --threads {params.threads} --kingdom arc {params.nohit} > {output.arc}
+    barrnap --threads {params.threads} --kingdom euk {params.nohit} > {output.euk}
+    cat {output.mito} {output.bac} {output.arc} {output.euk} | grep -v gff | awk -F'\t|;' 'BEGIN{{OFS="\t"}} NR>1{{print $1,$4,$5,$9}}' > {output.all}
+    '''
+
 rule trnascan:
   input:f"{outdir}barrnap/nohit_{{id}}_all_output"
   params:f"{outdir}diamond/NoHit_{{id}}.fa"
   output:f"{outdir}trnascan/{{id}}"
-  conda:"envs/trnascan.yaml"
+  conda: "envs/trnascan_KOunt.yaml"
+  shell:
+    '''
+    tRNAscan-SE -G -o {output} {params}
+    '''
+
+rule trnascan_noclustering:
+  input:f"{outdir}barrnap/nohit_{{id}}_all_output_noc"
+  params:f"{outdir}diamond/NoHit_{{id}}.fa"
+  output:f"{outdir}trnascan/{{id}}_noc"
+  conda: "envs/trnascan_KOunt.yaml"
   shell:
     '''
     tRNAscan-SE -G -o {output} {params}
@@ -775,7 +892,7 @@ rule rna_abundance:
     rrna=f"{outdir}barrnap/nohit_{{id}}_all_output",
     gff=f"{outdir}Prodigal_Outputs/filtered_gffs/{{id}}/{{id}}.gff",
     nohit=f"{outdir}diamond/still_nohit_{{id}}"
-  conda: "envs/diamond_bedtools_mmseq2.yaml"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
   params:
     bed=f"{outdir}barrnap/nohit_{{id}}.bed",
     bedko=f"{outdir}barrnap/nohit_{{id}}_all_output_catKO",
@@ -784,8 +901,7 @@ rule rna_abundance:
     bam=f"{outdir}Abundance/{{id}}/{{id}}.bam.bed",
     rnahits=f"{outdir}barrnap/RNA_{{id}}_hits",
     index="scripts/index",
-    cov=f"{outdir}barrnap/nohit_{{id}}_coverage",
-    miss=f"{outdir}barrnap/RNA_{{id}}_missing"
+    cov=f"{outdir}barrnap/nohit_{{id}}_coverage"
   output:
     raw=f"{outdir}Abundance_Outputs/{{id}}/{{id}}_rna_coverage",
     miss=f"{outdir}barrnap/RNA_{{id}}_missing",
@@ -799,7 +915,47 @@ rule rna_abundance:
     bedtools coverage -a {params.bedfull} -b {params.bam} -d > {output.raw}
     bedtools intersect -a {output.raw} -b {params.bedco} > {params.cov}
     awk '{{print $5}}' {params.cov} | sort | uniq > {params.rnahits}
-    cat {params.rnahits} {input.nohit} | sort | uniq -u > {params.miss}
+    cat {params.rnahits} {input.nohit} | sort | uniq -u > {output.miss}
+    awk -F',' '{{print $0"\t"NF}}' {params.cov} | awk '{{OFS="\t"}}{{print $1"-"$2"-"$3,($7/$8),$4}}' | awk '{{gsub(/,/,","$1"\t"$2"\t")}}1' | tr ',' '\n' | awk '{{print $1"-"$3"\t"$2}}' | awk -v OFMT='%.5f' '{{OFS = "\t"}}{{sum[$1]+=$2;count[$1]++}}END{{for (i in sum) print i,(sum[i]/count[i])}}' > {output.kos}
+    rev {output.kos} | cut -d'-' -f1 | rev | awk '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.KOunt}
+    rm {params.bed}
+    rm {params.bedko}
+    rm {params.bedfull}
+    rm {params.bedco}
+    rm {params.rnahits}
+    rm {params.cov}
+    '''
+
+rule rna_abundance_noclustering:
+  input:
+    trna=f"{outdir}trnascan/{{id}}_noc",
+    rrna=f"{outdir}barrnap/nohit_{{id}}_all_output_noc",
+    gff=f"{outdir}Prodigal_Outputs/filtered_gffs/{{id}}/{{id}}.gff",
+    nohit=f"{outdir}diamond/still_nohit_{{id}}_noc"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
+  params:
+    bed=f"{outdir}barrnap/nohit_{{id}}.bed",
+    bedko=f"{outdir}barrnap/nohit_{{id}}_all_output_noc_catKO",
+    bedfull=f"{outdir}barrnap/nohit_{{id}}_full.bed",
+    bedco=f"{outdir}barrnap/nohit_{{id}}_all_output_noc_catKO_ID",
+    bam=f"{outdir}Abundance/{{id}}/{{id}}.bam.bed",
+    rnahits=f"{outdir}barrnap/RNA_{{id}}_hits",
+    index="scripts/index",
+    cov=f"{outdir}barrnap/nohit_{{id}}_coverage"
+  output:
+    raw=f"{outdir}Abundance_Outputs/{{id}}/{{id}}_rna_coverage_noc",
+    miss=f"{outdir}barrnap/RNA_{{id}}_missing_noc",
+    kos=f"{outdir}barrnap/{{id}}_rna_kos_noc",
+    KOunt=f"{outdir}barrnap/{{id}}_rna_KOunt_noc"
+  shell:
+    '''
+    ./scripts/rrna_trna_cov.sh {input.rrna} {input.trna} {params.index} > {params.bed}
+    while read file; do grep -w $(echo "$file" | awk '{{print $1}}' | rev | cut -d_ -f2- | rev) {input.gff} | grep $(echo "$file" | awk '{{print $1}}' | awk -F'_' '{{print "ID="$NF";"}}') | awk -F '[\t|=|;]' -v "file=$file" '{{print $1 "\t" $4 "\t" file}}' | awk '{{print $1"\t"($2+$4)"\t"($2+$5)"\t"$7"\t"$3}}'; done < {params.bed} > {params.bedfull}
+    while read file; do grep -w $(echo "$file" | awk '{{print $1}}' | rev | cut -d_ -f2- | rev) {input.gff} | grep $(echo "$file" | awk '{{print $1}}' | awk -F'_' '{{print "ID="$NF";"}}') | awk -F '[\t|=|;]' -v "file=$file" '{{print $1 "\t" $4 "\t" file}}' | awk '{{print $1"\t"($2+$4)"\t"($2+$5)"\t"$6}}'; done < {params.bedko} > {params.bedco}
+    bedtools coverage -a {params.bedfull} -b {params.bam} -d > {output.raw}
+    bedtools intersect -a {output.raw} -b {params.bedco} > {params.cov}
+    awk '{{print $5}}' {params.cov} | sort | uniq > {params.rnahits}
+    cat {params.rnahits} {input.nohit} | sort | uniq -u > {output.miss}
     awk -F',' '{{print $0"\t"NF}}' {params.cov} | awk '{{OFS="\t"}}{{print $1"-"$2"-"$3,($7/$8),$4}}' | awk '{{gsub(/,/,","$1"\t"$2"\t")}}1' | tr ',' '\n' | awk '{{print $1"-"$3"\t"$2}}' | awk -v OFMT='%.5f' '{{OFS = "\t"}}{{sum[$1]+=$2;count[$1]++}}END{{for (i in sum) print i,(sum[i]/count[i])}}' > {output.kos}
     rev {output.kos} | cut -d'-' -f1 | rev | awk '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.KOunt}
     rm {params.bed}
@@ -823,7 +979,7 @@ rule nohit_fastq:
     reads=f"{outdir}barrnap/RNA_{{id}}_missing_reads",
     r1 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R1.fastq.gz",
     r2 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz"
-  conda: "envs/bedtools_seqtk.yaml"
+  conda: "envs/bedtools_seqtk_KOunt.yaml"
   output: f"{outdir}Touch/{{id}}_nohit_fastq"
   shell:
     '''
@@ -847,6 +1003,8 @@ rule nohit_fastq:
     rm {params.reads}_R1
     rm {params.reads}_R2
     cat {params.fastq}_R1.gz {params.fastq}_R2.gz > {params.fastq}
+    rm {params.fastq}_R1.gz
+    rm {params.fastq}_R2.gz
     touch {output}
     '''
 
@@ -863,8 +1021,50 @@ rule nohit_fastq_without_RNA:
     reads=f"{outdir}diamond/no_RNA_{{id}}_missing_reads",
     r1 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R1.fastq.gz",
     r2 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz"
-  conda: "envs/bedtools_seqtk.yaml"
+  conda: "envs/bedtools_seqtk_KOunt.yaml"
   output: f"{outdir}Touch/{{id}}_nohit_fastq_without_RNA"
+  shell:
+    '''
+    awk -F '=|\t|;' '{{print $1 "_" $10 "\t" $4 "\t" $5}}' {input.gff} > {params.bed}
+    awk 'NR==FNR{{a[$1]=$2;b[$1]=$3;next}}{{print $0 "\t" a[$1] "\t" b[$1]}}' {params.bed} {input.nohit} > {params.nobed}_tmp
+    rm {params.bed}
+    awk '{{print $1}}' {params.nobed}_tmp | rev | cut -d "_" -f 2- | rev > {params.nobed}_tmp.1
+    awk '{{print $2 "\t" $3}}' {params.nobed}_tmp > {params.nobed}_tmp.2
+    paste {params.nobed}_tmp.1 {params.nobed}_tmp.2 > {params.nobed}
+    rm {params.nobed}_tmp
+    rm {params.nobed}_tmp.1
+    rm {params.nobed}_tmp.2
+    bedtools intersect -a {params.nobed} -b {params.bam} -bed -wb | awk '{{print $7}}' | sort | uniq > {params.reads}
+    rm {params.nobed}
+    gawk -F '/' '$NF==1' {params.reads} > {params.reads}_R1
+    gawk -F '/' '$NF==2' {params.reads} > {params.reads}_R2
+    zcat {params.r1} | seqtk subseq - {params.reads}_R1 > {params.fastq}_R1
+    zcat {params.r2} | seqtk subseq - {params.reads}_R2 > {params.fastq}_R2
+    gzip {params.fastq}_R1
+    gzip {params.fastq}_R2
+    rm {params.reads}_R1
+    rm {params.reads}_R2
+    cat {params.fastq}_R1.gz {params.fastq}_R2.gz > {params.fastq}
+    rm {params.fastq}_R1.gz
+    rm {params.fastq}_R2.gz
+    touch {output}
+    '''
+
+rule nohit_fastq_noclustering:
+  input:
+    touchfile=f"{outdir}Abundance/{{id}}/{{id}}_bwa",
+    nohit=f"{outdir}barrnap/RNA_{{id}}_missing_noc",
+    gff=f"{outdir}Prodigal_Outputs/filtered_gffs/{{id}}/{{id}}.gff"
+  params:
+    bed=f"{outdir}diamond/{{id}}.bed",
+    nobed=f"{outdir}barrnap/RNA_{{id}}_missing.bed",
+    bam=f"{outdir}Abundance/{{id}}/{{id}}.bam.bed",
+    fastq=f"{outdir}barrnap/RNA_{{id}}_missing.fastq.gz",
+    reads=f"{outdir}barrnap/RNA_{{id}}_missing_reads",
+    r1 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R1.fastq.gz",
+    r2 = f"{outdir}trimmed/{{id}}/{{id}}.trimmed.R2.fastq.gz"
+  conda: "envs/bedtools_seqtk_KOunt.yaml"
+  output: f"{outdir}Touch/{{id}}_nohit_fastq_noc"
   shell:
     '''
     awk -F '=|\t|;' '{{print $1 "_" $10 "\t" $4 "\t" $5}}' {input.gff} > {params.bed}
@@ -904,14 +1104,48 @@ rule nohit_annotate_reads:
     tmp=f"{outdir}diamond/{{id}}_reads_tmp",
     cat=f"{outdir}diamond/NoHit_{{id}}_cat",
     nohit=f"{outdir}diamond/{{id}}/{{id}}_hits_nohit",
-    mmseq=f"{outdir}mmseqs/nohit_reads_{{id}}",
+    mmseq=f"{outdir}MMSeq_Outputs/{{id}}/nohit_reads_{{id}}",
     reads=f"{outdir}barrnap/RNA_{{id}}_missing_reads",
     missing=f"{outdir}barrnap/RNA_{{id}}_still_missing_reads",
     threads=f"{nohit}"
-  conda: "envs/diamond_bedtools_mmseq2.yaml"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
   output:
     besthits=f"{outdir}diamond/{{id}}/{{id}}_nohit_besthits",
     ko=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts"
+  shell:
+    '''
+    mkdir -p {params.wd}
+    diamond blastx --query {params.fq} --threads {params.threads} --outfmt {params.of} -d {input.db} > {params.nohit}
+    mmseqs easy-search {params.fq} {input.rna} {params.mmseq} {params.tmp} --threads {params.threads} --search-type 3 --format-output {params.ofm}
+    cat {params.nohit} {params.mmseq} > {params.cat}
+    rm -r {params.tmp}
+    ./scripts/unmapped_reads_ko_100.sh {params.cat} {params.wd} {output.besthits} {input.bg} {output.ko}
+    awk '{{print $1}}' {output.besthits} | sort | uniq | cat - {params.reads} | sort | uniq -u > {params.missing}
+    rm {params.cat}
+    '''
+
+rule nohit_annotate_reads_noclustering:
+  input:
+    touch=f"{outdir}Touch/{{id}}_nohit_fastq_noc",
+    db=f"{diamond_db}",
+    rna=f"{mmseq_db}",
+    bg=f"{combined_bdg}"
+  params:
+    fq=f"{outdir}barrnap/RNA_{{id}}_missing.fastq.gz",
+    of="6 qseqid sseqid pident qlen slen qstart qend sstart send evalue",
+    ofm="query,target,pident,qlen,tlen,qstart,qend,tstart,tend,evalue",
+    wd=f"{outdir}Abundance/{{id}}/nohit/",
+    tmp=f"{outdir}diamond/{{id}}_reads_tmp",
+    cat=f"{outdir}diamond/NoHit_{{id}}_cat",
+    nohit=f"{outdir}diamond/{{id}}/{{id}}_hits_nohit",
+    mmseq=f"{outdir}MMSeq_Outputs/{{id}}/nohit_reads_{{id}}",
+    reads=f"{outdir}barrnap/RNA_{{id}}_missing_reads",
+    missing=f"{outdir}barrnap/RNA_{{id}}_still_missing_reads",
+    threads=f"{nohit}"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
+  output:
+    besthits=f"{outdir}diamond/{{id}}/{{id}}_nohit_besthits_noc",
+    ko=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts_noc"
   shell:
     '''
     mkdir -p {params.wd}
@@ -938,7 +1172,7 @@ rule nohit_annotate_reads_without_RNA:
     reads=f"{outdir}diamond/no_RNA_{{id}}_missing_reads",
     missing=f"{outdir}diamond/no_RNA_{{id}}_still_missing_reads",
     threads=f"{nohit}"
-  conda: "envs/diamond_bedtools_mmseq2.yaml"
+  conda: "envs/diamond_bedtools_mmseq2_KOunt.yaml"
   output:
     besthits=f"{outdir}diamond/{{id}}/{{id}}_nohit_without_RNA_besthits",
     ko=f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_without_RNA_KOunts"
@@ -961,7 +1195,7 @@ rule kallisto:
     r2=f"{outdir}barrnap/RNA_{{id}}_still_missing_R2.fastq.gz",
     threads=f"{kallisto_threads}",
     kal=directory(f"{outdir}kallisto/{{id}}_kallisto_still_missing")
-  conda: "envs/kallisto.yaml"
+  conda: "envs/kallisto_KOunt.yaml"
   output:
     ko=f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt"
   shell:
@@ -973,8 +1207,39 @@ rule kallisto:
     rm {params.fq}
     rm {params.missing}_R1
     rm {params.missing}_R2
-    kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} -c {input.ref}_len {params.r1} {params.r2}
-    awk -v len=$(cat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)*$2}}' {params.kal}/abundance.tsv > {params.kal}/tmp
+    kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} {params.r1} {params.r2}
+    awk -v len=$(cat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)*$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
+    awk '{{print $1}}' {params.kal}/tmp | awk -F'-' '{{print NF-1}}' | paste {params.kal}/tmp - | awk -v OFMT='%.10f' -v OFS='\t' '{{print $1,($2/$3)}}' | awk '{{gsub(/-/,"\t"$2",")}}1' | cut -d, -f2- | sed 's/,$//g' | tr ',' '\n' | awk -v OFMT='%.10f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.ko}
+    rm {params.kal}/tmp
+    rm {params.r1}
+    rm {params.r2}
+    '''
+
+rule kallisto_noclustering:
+  input:
+    besthits=f"{outdir}diamond/{{id}}/{{id}}_nohit_besthits_noc",
+    ref=f"{kallisto}"
+  params:
+    missing=f"{outdir}barrnap/RNA_{{id}}_still_missing_reads",
+    fq=f"{outdir}barrnap/RNA_{{id}}_missing.fastq.gz",
+    r1=f"{outdir}barrnap/RNA_{{id}}_still_missing_R1.fastq.gz",
+    r2=f"{outdir}barrnap/RNA_{{id}}_still_missing_R2.fastq.gz",
+    threads=f"{kallisto_threads}",
+    kal=directory(f"{outdir}kallisto/{{id}}_kallisto_still_missing")
+  conda: "envs/kallisto_KOunt.yaml"
+  output:
+    ko=f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt_noc"
+  shell:
+    '''
+    gawk -F '/' '$NF==1' {params.missing} > {params.missing}_R1
+    gawk -F '/' '$NF==2' {params.missing} > {params.missing}_R2
+    zcat {params.fq} | seqtk subseq - {params.missing}_R1 | gzip > {params.r1}
+    zcat {params.fq} | seqtk subseq - {params.missing}_R2 | gzip > {params.r2}
+    rm {params.fq}
+    rm {params.missing}_R1
+    rm {params.missing}_R2
+    kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} {params.r1} {params.r2}
+    awk -v len=$(cat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)*$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
     awk '{{print $1}}' {params.kal}/tmp | awk -F'-' '{{print NF-1}}' | paste {params.kal}/tmp - | awk -v OFMT='%.10f' -v OFS='\t' '{{print $1,($2/$3)}}' | awk '{{gsub(/-/,"\t"$2",")}}1' | cut -d, -f2- | sed 's/,$//g' | tr ',' '\n' | awk -v OFMT='%.10f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.ko}
     rm {params.kal}/tmp
     rm {params.r1}
@@ -1001,10 +1266,9 @@ rule unmapped_reads:
     sorted=f"{outdir}Abundance/{{id}}/unmapped/sorted",
     threads=f"{unmapped_threads}",
     tmp=f"{outdir}MMSeq_Outputs/{{id}}_tmp",
-    unmap=f"{outdir}diamond/{{id}}/{{id}}_hits_unmapped",
     mm=f"{outdir}MMSeq_Outputs",
     mm2=f"{outdir}MMSeq_Outputs/{{id}}"
-  conda: "envs/bedtools_seqtk.yaml"
+  conda: "envs/bedtools_seqtk_KOunt.yaml"
   output:
     unmap=f"{outdir}diamond/{{id}}/{{id}}_hits_unmapped",
     mmseq=f"{outdir}MMSeq_Outputs/{{id}}/{{id}}_hits_unmapped",
@@ -1042,7 +1306,7 @@ rule unmapped_reads_no_RNA:
     wd=f"{outdir}Abundance/{{id}}/unmapped/",
     sorted=f"{outdir}Abundance/{{id}}/unmapped/sorted",
     threads=f"{unmapped_threads}"
-  conda: "envs/bedtools_seqtk.yaml"
+  conda: "envs/bedtools_seqtk_KOunt.yaml"
   output:
     unmap=f"{outdir}diamond/{{id}}/{{id}}_hits_unmapped_norna",
     besthits=f"{outdir}diamond/{{id}}/{{id}}_unmapped_besthits_norna",
@@ -1064,15 +1328,17 @@ rule kallisto_unmapped:
     unmapped=f"{outdir}Abundance/{{id}}/{{id}}_unmapped_reads",
     still_missing=f"{outdir}Abundance/{{id}}/{{id}}_unmapped_still_missing",
     fq=f"{outdir}Abundance/{{id}}/{{id}}_unmapped_reads.fastq.gz",
+    barrnap=f"{outdir}barrnap",
     r1=f"{outdir}barrnap/RNA_{{id}}_unmap_still_missing_R1.fastq.gz",
     r2=f"{outdir}barrnap/RNA_{{id}}_unmap_still_missing_R2.fastq.gz",
     threads=f"{kallisto_threads}",
     kal=directory(f"{outdir}kallisto/{{id}}_unmapped_kallisto_still_missing")
-  conda: "envs/kallisto.yaml"
+  conda: "envs/kallisto_KOunt.yaml"
   output:
     ko=f"{outdir}kallisto/{{id}}_unmapped_kallisto_still_missing_KOunt"
   shell:
     '''
+    mkdir -p {params.barrnap}
     awk '{{print $1}}' {input.besthits} | sort | uniq | cat - {params.unmapped} | sort | uniq -u > {params.still_missing}
     gawk -F '/' '$NF==1' {params.still_missing} > {params.still_missing}_R1
     gawk -F '/' '$NF==2' {params.still_missing} > {params.still_missing}_R2
@@ -1080,8 +1346,8 @@ rule kallisto_unmapped:
     zcat {params.fq} | seqtk subseq - {params.still_missing}_R2 | gzip > {params.r2}
     rm {params.still_missing}_R1
     rm {params.still_missing}_R2
-    kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} -c {input.ref}_len {params.r1} {params.r2}
-    awk -v len=$(zcat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)*$2}}' {params.kal}/abundance.tsv > {params.kal}/tmp
+    kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} {params.r1} {params.r2}
+    awk -v len=$(zcat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)*$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
     awk '{{print $1}}' {params.kal}/tmp | awk -F'-' '{{print NF-1}}' | paste {params.kal}/tmp - | awk -v OFMT='%.10f' -v OFS='\t' '{{print $1,($2/$3)}}' | awk '{{gsub(/-/,"\t"$2",")}}1' | cut -d, -f2- | sed 's/,$//g' | tr ',' '\n' | awk -v OFMT='%.10f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.ko}
     rm {params.kal}/tmp
     rm {params.r1}
@@ -1119,16 +1385,17 @@ rule abundance_matrix_annotate_with_mapping:
     for i in {params.id}; do echo $i; done > {params.tmp}samples
     while read file; do cat {params.tmp}"$file"_* | awk '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {params.tmp}"$file"_catted; done < {params.tmp}samples
     ./scripts/abundance_matrix_catted.sh {params.tmp} {params.list} {params.kegglist} > {output.ann_results}
+    rm {params.kegglist}
     rm -r {params.tmp}
     '''
 
 rule abundance_matrix_annotate_with_mapping_noclust:
   input:
     kofam=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_noc_KOunt", id=IDS),
-    nohit_p=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt", id=IDS),
-    nohit_r=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts", id=IDS),
-    rna=expand(f"{outdir}barrnap/{{id}}_rna_KOunt", id=IDS),
-    kal=expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt", id=IDS),
+    nohit_p=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohitp_KOunt_noc", id=IDS),
+    nohit_r=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_nohit_KOunts_noc", id=IDS),
+    rna=expand(f"{outdir}barrnap/{{id}}_rna_KOunt_noc", id=IDS),
+    kal=expand(f"{outdir}kallisto/{{id}}_kallisto_still_missing_KOunt_noc", id=IDS),
     unmap=expand(f"{outdir}Kofamscan/Results/{{id}}/{{id}}_unmapped_KOunt", id=IDS),
     kal_unmap=expand(f"{outdir}kallisto/{{id}}_unmapped_kallisto_still_missing_KOunt", id=IDS)
   params:
@@ -1153,6 +1420,7 @@ rule abundance_matrix_annotate_with_mapping_noclust:
     for i in {params.id}; do echo $i; done > {params.tmp}samples
     while read file; do cat {params.tmp}"$file"_* | awk '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {params.tmp}"$file"_catted; done < {params.tmp}samples
     ./scripts/abundance_matrix_catted.sh {params.tmp} {params.list} {params.kegglist} > {output.ann_results}
+    rm {params.kegglist}
     rm -r {params.tmp}
     '''
 
@@ -1182,4 +1450,5 @@ rule abundance_matrix_annotate_with_mapping_noRNA:
     while read file; do cat {params.tmp}"$file"_* | awk '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {params.tmp}"$file"_catted; done < {params.tmp}samples
     ./scripts/abundance_matrix_catted.sh {params.tmp} {params.list} {params.kegglist} > {output.ann_results}
     rm -r {params.tmp}
+    rm {params.kegglist}
     '''
