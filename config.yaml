@@ -7,8 +7,11 @@ kallisto: "KOunt_databases_v1/KOunt_RNA_1.kallisto"
 splitting_multiples: "" #if splitting protein coverage between multiple KOs leave blank. If grouping use #.
 grouping_multiples: "#" #if grouping proteins that have hits with multiple KOs leave blank. If splitting use #.
 
+checking_fqs: "" #if checking the fastqs have unique read ids then leave blank. If not use #.
+not_checking_fqs: "#" #if not checking the fastqs have unique read ids then leave blank. If you are then use #.
+
 #rule trim
-raw_reads: "reads/" #directory containing the raw reads, include a '/' at the end
+raw_reads: "test_fastqs/" #directory containing the raw reads, include a '/' at the end
 r1_ext: "_R1.fastq.gz" #R1 file extension after the sample id
 r2_ext: "_R2.fastq.gz" #R2 file extension after the sample id
 r1ad: "AGATCGGAAGAGC" #R1 adapter sequence
@@ -17,11 +20,11 @@ polyg: "" #enable polyG tail trimming, leave empty if not required
 qual: "" #disable quality trimming, leave empty if not required
 minlen: "60" #minimum read length allowed
 overlap: "4" #minimum length to detect overlapped regions
-trim_threads: "4" #number of threads
+trim_threads: "1" #number of threads
 
 #rule megahit
 mega_mem: "4.8e+10" #memory allocated to megahit
-mega_threads: "8" #number of threads
+mega_threads: "1" #number of threads
 mega_kmers: "27,37,47,57,67,77,87" #kmer sizes
 mega_len: "300" #minimum contig length
 
