@@ -1,0 +1,29 @@
+name: kofamscan_hmmr_KOunt
+channels:
+  - bioconda
+  - conda-forge
+  - biobakery
+  - defaults
+  - https://repo.anaconda.com/pkgs/main/
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - ca-certificates=2022.12.7=ha878542_0
+  - gdbm=1.18=h0a1914f_2
+  - gmp=6.2.1=h58526e2_0
+  - hmmer=3.2=hfc679d8_3
+  - kofamscan=1.3.0=0
+  - libffi=3.2.1=he1b5a44_1007
+  - libgcc-ng=12.2.0=h65d4601_19
+  - libgomp=12.2.0=h65d4601_19
+  - libstdcxx-ng=12.2.0=h46fd767_19
+  - libzlib=1.2.13=h166bdaf_4
+  - ncurses=6.3=h27087fc_1
+  - openssl=1.1.1t=h0b41bf4_0
+  - parallel=20170422=pl5.22.0_0
+  - perl=5.22.0.1=0
+  - readline=8.1.2=h0f457ee_0
+  - ruby=2.7.2=h0b71e51_2
+  - yaml=0.2.5=h7f98852_2
+  - zlib=1.2.13=h166bdaf_4
+prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/envs/kofamscan_hmmr_KOunt
