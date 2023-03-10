@@ -24,4 +24,3 @@ dependencies:
   - perl=5.32.1=2_h7f98852_perl5
   - wget=1.20.3=ha35d2d1_1
   - zlib=1.2.13=h166bdaf_4
-prefix: /exports/cmvm/eddie/eb/groups/watson_grp/software/jmattock_conda_envs/envs/mmseqs2_KOunt
