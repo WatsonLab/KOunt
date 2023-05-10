@@ -39,7 +39,7 @@ mamba install -c bioconda snakemake
 
 ### Install the conda environments
 ```
-source activate snakemake
+conda activate snakemake_mamba
 snakemake --use-conda --conda-create-envs-only --cores 1
 ```
 
