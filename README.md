@@ -19,6 +19,7 @@ Download the latest version of the Snakefile, scripts and conda env files.
 git clone https://github.com/WatsonLab/KOunt
 cd KOunt/
 ```
+Check that the scripts are executable, if not do: `chmod +x scripts/*sh`
 ### Prepare the reference databases
 Download the KOunt UniProt and RNA databases.
 ```
@@ -48,7 +49,7 @@ Download the test fastqs. Leave the raw reads location in the config at default 
 ```
 wget https://figshare.com/ndownloader/files/39545968
 mv 39545968 test_fastqs.tar
-tar -xzvf test_fastqs.tar
+tar -xvf test_fastqs.tar
 rm test_fastqs.tar
 snakemake -k --ri --use-conda -n
 snakemake -k --ri --use-conda --cores 8
