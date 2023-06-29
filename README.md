@@ -6,7 +6,7 @@ KOunt is a Snakemake pipeline that calculates the abundance of KEGG orthologues 
 All predicted proteins that don’t have a KO hit are called 'NoHit’. The NoHit proteins are blasted against a custom UniProt database annotated with a KO and the nucleotides against a custom RNA database. Unannotated proteins are screened for rRNA and tRNA using Barrnap and tRNAscan-SE. Reads mapped to NoHit proteins that remain unannotated and unmapped reads are blasted against the KOunt databases and RNA quantified in the remaining reads.
 
 ## Workflow
-<img src="./workflow.png">
+<img src="./Flow chart.png">
 
 ## Installation
 ### Dependencies
