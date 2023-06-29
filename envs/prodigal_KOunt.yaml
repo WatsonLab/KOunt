@@ -1,0 +1,13 @@
+name: prodigal_KOunt
+channels:
+  - bioconda
+  - conda-forge
+  - biobakery
+  - defaults
+  - https://repo.anaconda.com/pkgs/main/
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - libgcc-ng=12.2.0=h65d4601_19
+  - libgomp=12.2.0=h65d4601_19
+  - prodigal=2.6.3=h516909a_2

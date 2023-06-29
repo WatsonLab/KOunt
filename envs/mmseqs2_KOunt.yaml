@@ -1,0 +1,26 @@
+name: mmseqs2_KOunt
+channels:
+  - bioconda
+  - conda-forge
+  - biobakery
+  - defaults
+  - https://repo.anaconda.com/pkgs/main/
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - bzip2=1.0.8=h7f98852_4
+  - ca-certificates=2022.12.7=ha878542_0
+  - gawk=5.1.0=h7f98852_0
+  - gettext=0.21.1=h27087fc_0
+  - libgcc-ng=12.2.0=h65d4601_19
+  - libgomp=12.2.0=h65d4601_19
+  - libidn2=2.3.4=h166bdaf_0
+  - libnsl=2.0.0=h7f98852_0
+  - libstdcxx-ng=12.2.0=h46fd767_19
+  - libunistring=0.9.10=h7f98852_0
+  - libzlib=1.2.13=h166bdaf_4
+  - mmseqs2=13.45111=pl5321hf1761c0_2
+  - openssl=3.0.8=h0b41bf4_0
+  - perl=5.32.1=2_h7f98852_perl5
+  - wget=1.20.3=ha35d2d1_1
+  - zlib=1.2.13=h166bdaf_4
