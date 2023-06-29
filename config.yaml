@@ -16,11 +16,11 @@ r1_ext: "_R1.fastq.gz" #R1 file extension after the sample id
 r2_ext: "_R2.fastq.gz" #R2 file extension after the sample id
 r1ad: "AGATCGGAAGAGC" #R1 adapter sequence
 r2ad: "AGATCGGAAGAGC" #R2 adapter sequence
-polyg: "" #enable polyG tail trimming, leave empty if not required
-qual: "" #disable quality trimming, leave empty if not required
-minlen: "60" #minimum read length allowed
-overlap: "4" #minimum length to detect overlapped regions
-trim_threads: "1" #number of threads
+polyg: "-g" #enable polyG tail trimming, leave empty if not required
+qual: "-Q" #disable quality trimming, leave empty if not required
+minlen: "50" #minimum read length allowed
+overlap: "5" #minimum length to detect overlapped regions
+trim_threads: "4" #number of threads
 
 #rule megahit
 mega_mem: "4.8e+10" #memory allocated to megahit
@@ -32,13 +32,18 @@ mega_len: "300" #minimum contig length
 bwa_threads: "4" #number of threads
 
 #rule coverage
+evenness_yes: "" #leave empty to filter the results by coverage evenness
+evenness_no: "#" #leave empty to not filter the results by coverage evenness, must be the opposite of evenness_yes
 cov_split: "5000" #number of contigs to include in the split bams. If you're struggling with memory issues decrease this number
 
 #rule kegg_db
-db: "out/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
+db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/out/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
 
 #rule kofamscan
 kofamscan_threads: "4" #number of threads
+
+#rule kofamscan_results
+evenness_pid: "0.95" #evenness percentage threshold
 
 #rule cdhit
 cdhit_mem: "32000" #maximum memory allocated to cdhit
