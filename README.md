@@ -2,8 +2,8 @@
 Snakemake pipeline calculating KEGG orthologue abundance in metagenomic sequence data.
 
 ## Documentation
-KOunt is a Snakemake pipeline that calculates the abundance of KEGG orthologues (KOs) in metagenomic sequence data. KOunt takes raw paired-end reads and quality trims, assembles, predicts proteins and annotates them. The reads are mapped to the assembly and protein coverage calculated. The annotated proteins are clustered at 100%, 90% and 50% identity within each KO to quantify their diversity.
-All predicted proteins that don’t have a KO hit are called 'NoHit’. The NoHit proteins are blasted against a custom UniProt database annotated with a KO and the nucleotides against a custom RNA database. Unannotated proteins are screened for rRNA and tRNA using Barrnap and tRNAscan-SE. Reads mapped to NoHit proteins that remain unannotated and unmapped reads are blasted against the KOunt databases and RNA quantified in the remaining reads.
+KOunt is a Snakemake pipeline that calculates the abundance of KEGG orthologues (KOs) in metagenomic sequence data. KOunt takes raw paired-end reads and quality trims, assembles, predicts proteins and annotates them with KofamScan. The reads are mapped to the assembly and protein coverage calculated. Users have the option of calculating coverage evenness of the proteins and filtering the KofamScan proteins to remove unevenly covered proteins. The proteins annotated by KofamScan are clustered at 100%, 90% and 50% identity within each KO to quantify their diversity; as using the evenness filtering option reduces the numbers of these proteins we don't recommend using the evenness option if you are interested in the clustering results.
+All predicted proteins that don’t have a KO hit or are excluded by evenness filtering are called 'NoHit’. The NoHit proteins are blasted against a custom UniProt database annotated with a KO and the nucleotides against a custom RNA database. Reads mapped to NoHit proteins that remain unannotated and unmapped reads are blasted against the KOunt databases and RNA quantified in the remaining reads.
 
 ## Workflow
 <img src="./Flow chart.png">
@@ -76,6 +76,10 @@ To perform all steps but protein clustering and RNA abundance quantification:
 ```
 snakemake -k --ri --use-conda all_without_RNA --cores 8
 ```
+
+## Estimated run times and memory usage
+The average run time and maximum memory used by each of the rules on the 10 samples from the KOunt manuscript is available [here](https://github.com/WatsonLab/KOunt/wiki/KOunt-run-times-and-memory-use).
+
 ## Options
 The following options can be amended in the config.yaml file:
 
@@ -116,12 +120,17 @@ The abundance of proteins that KofamScan annotates with multiple KOs can either 
 
 #### Coverage (rule coverage)
 * `cov_split` the number of chunks to split the BAM file into. The bigger the number of chunks, the memory required decreases but run time increases (default: “10”)
+* `evenness_yes` if you want to filter the kofamscan results by coverage evenness then leave this option empty (default: "")
+* `evenness_no` if you don't want to filter the kofamscan results by coverage evenness then leave this option empty. Must be the opposite of evenness_yes (default: "#")
 
 #### KEGG database download (rule kegg_db)
 * `db` the path to the kofamscan database. Amend if you have an alternate version you wish to use, default will download the current database version (default: “out/Kofamscan/kofam/”)
 
 #### Kofamscan (rule kofamscan)
 * `kofamscan_threads` the number of threads (default: “4”)
+
+#### Kofamscan results (rule kofamscan_results)
+* `evenness_pid` the evenness percentage threshold to filter the proteins by (default: "0.95")
 
 #### CD-HIT (rule cdhit)
 * `cdhit_mem` the maximum memory CD-HIT can use (default: “32000”)
