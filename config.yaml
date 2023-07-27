@@ -37,7 +37,7 @@ evenness_no: "#" #leave empty to not filter the results by coverage evenness, mu
 cov_split: "5000" #number of contigs to include in the split bams. If you're struggling with memory issues decrease this number
 
 #rule kegg_db
-db: "/home/jmattock/genus_watson_lab/Jenny/validation/KEGG_KOuntPy/out/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
+db: "out/Kofamscan/kofam/" #directory where kofam profiles directory and list file stored. Leave as default to download the most recent version
 
 #rule kofamscan
 kofamscan_threads: "4" #number of threads
