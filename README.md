@@ -5,6 +5,8 @@ Snakemake pipeline calculating KEGG orthologue abundance in metagenomic sequence
 KOunt is a Snakemake pipeline that calculates the abundance of KEGG orthologues (KOs) in metagenomic sequence data. KOunt takes raw paired-end reads and quality trims, assembles, predicts proteins and annotates them with KofamScan. The reads are mapped to the assembly and protein coverage calculated. Users have the option of calculating coverage evenness of the proteins and filtering the KofamScan proteins to remove unevenly covered proteins. The proteins annotated by KofamScan are clustered at 100%, 90% and 50% identity within each KO to quantify their diversity; as using the evenness filtering option reduces the numbers of these proteins we don't recommend using the evenness option if you are interested in the clustering results.
 All predicted proteins that don’t have a KO hit or are excluded by evenness filtering are called 'NoHit’. The NoHit proteins are blasted against a custom UniProt database annotated with a KO and the nucleotides against a custom RNA database. Reads mapped to NoHit proteins that remain unannotated and unmapped reads are blasted against the KOunt databases and RNA quantified in the remaining reads.
 
+If you use KOunt please cite https://academic.oup.com/bioinformatics/article/39/8/btad483/7236497
+
 ## Workflow
 <img src="./Flow chart.png">
 
