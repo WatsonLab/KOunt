@@ -1101,7 +1101,7 @@ rule kallisto:
     rm {params.missing}_R1
     rm {params.missing}_R2
     kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} {params.r1} {params.r2}
-    awk -v len=$(cat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)/$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
+    awk -v len=$(zcat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)/$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
     awk '{{print $1}}' {params.kal}/tmp | awk -F'-' '{{print NF-1}}' | paste {params.kal}/tmp - | awk -v OFMT='%.10f' -v OFS='\t' '{{print $1,($2/$3)}}' | awk '{{gsub(/-/,"\t"$2",")}}1' | cut -d, -f2- | sed 's/,$//g' | tr ',' '\n' | awk -v OFMT='%.10f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.ko}
     rm {params.kal}/tmp
     rm {params.r1}
@@ -1135,7 +1135,7 @@ rule kallisto_noclustering:
     rm {params.missing}_R1
     rm {params.missing}_R2
     kallisto quant -i {input.ref} -o {params.kal} -t {params.threads} {params.r1} {params.r2}
-    awk -v len=$(cat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)/$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
+    awk -v len=$(zcat {params.r1} {params.r2} | awk 'NR%4==2{{sum+=length($0)}}END{{print sum/(NR/4)}}') 'NR>1{{print $1"\t"(len*$4)/$2}}' {params.kal}/abundance.tsv | gawk '$2!=0' > {params.kal}/tmp
     awk '{{print $1}}' {params.kal}/tmp | awk -F'-' '{{print NF-1}}' | paste {params.kal}/tmp - | awk -v OFMT='%.10f' -v OFS='\t' '{{print $1,($2/$3)}}' | awk '{{gsub(/-/,"\t"$2",")}}1' | cut -d, -f2- | sed 's/,$//g' | tr ',' '\n' | awk -v OFMT='%.10f' '{{a[$1]+=$2}}END{{for(i in a) print i,a[i]}}' > {output.ko}
     rm {params.kal}/tmp
     rm {params.r1}
