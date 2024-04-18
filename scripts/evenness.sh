@@ -11,8 +11,8 @@ cut -d';' -f1,14 "$List"_depth | cut -f1,9,11 | sed 's/\tID=/_/g' | sed 's/\;//g
 rm "$List"_depth
 groupBy -i "$List"_depth.2 -g 1 -c 2 -o collapse | tr '\t' ',' | datamash transpose -t , --no-strict --filler NA > "$List"_depth.3 #runs bedtools groupby to collapse the depth from each protein
 rm "$List"_depth.2
-echo "dep <- read.csv(\""$List"_depth.3\", header=TRUE)" > "$List"_depth.R #print header for R script
-awk '{print "D=na.omit(dep$"$0"); C=round(mean(D)); D2=D[D<=C]; E=1-(length(D2)-sum(D2)/C)/length(D);E"}' "$List".contigs >> "$List"_depth.R #prints R commands for each protein
+echo "dep <- read.csv(\""$List"_depth.3\", header=TRUE, check.names=FALSE)" > "$List"_depth.R #print header for R script
+awk '{print "D=na.omit(dep$`"$0"`); C=round(mean(D)); D2=D[D<=C]; E=1-(length(D2)-sum(D2)/C)/length(D);E"}' "$List".contigs >> "$List"_depth.R #prints R commands for each protein
 R CMD BATCH --vanilla "$List"_depth.R "$List"_depth.Rout #runs R script
 rm "$List"_depth.3
 grep '^\[1\]' "$List"_depth.Rout | awk '{print $2}' > "$List"_tmp #pulls out evenness
