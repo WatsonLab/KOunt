@@ -35,48 +35,50 @@ If you wish to update these databases, further information on how they were crea
 
 ### Install Snakemake
 ```
-conda create -n snakemake_mamba -c conda-forge -c bioconda mamba
+conda create -n snakemake_mamba -c conda-forge -c bioconda mamba=1.0.0
 conda activate snakemake_mamba
-mamba install -c bioconda snakemake
+mamba install -c bioconda snakemake=7.22.0
 ```
-
-### Install the conda environments
-```
-conda activate snakemake_mamba
-snakemake --use-conda --conda-create-envs-only --cores 1
-```
-
-### Test installation
-Download the test fastqs. Leave the raw reads location in the config at default and perform a dry-run with the reads subsampled from ERR2027889. Then run the pipeline. With 8 cores it should take approximately 20 minutes.
+### Download test data
+Download the test fastqs.
 ```
 wget https://figshare.com/ndownloader/files/39545968
 mv 39545968 test_fastqs.tar
 tar -xvf test_fastqs.tar
 rm test_fastqs.tar
-snakemake -k --ri --use-conda -n
-snakemake -k --ri --use-conda --cores 8
+```
+### Install the conda environments
+```
+conda activate snakemake_mamba
+snakemake --conda-create-envs-only --cores 1
+```
+### Test installation
+Leave the raw reads location in the config at default and perform a dry-run with the reads subsampled from ERR2027889. Then run the pipeline. With 8 cores it should take approximately 20 minutes.
+```
+snakemake -k --ri -n
+snakemake -k --ri --cores 8
 ```
 
 ## Running KOunt
 Amend the options config file, `config.yaml`, with your fastq file locations and extensions. KOunt expects the raw reads to be in a directory with the same sample name eg. `ERR2027889/ERR2027889_R1.fastq.gz`. It runs the pipeline on all the samples in the directory you specify in the config file.
 To use the default rule all in the Snakefile specify the number of cores you have available and run the entire pipeline with:
 ```
-snakemake -k --ri --use-conda --cores 8
+snakemake -k --ri --cores 8
 ```
 
 If you wish to only run part of the pipeline you can specify another rule all.
 
 To perform all steps but the protein clustering use:
 ```
-snakemake -k --ri --use-conda all_without_clustering --cores 8
+snakemake -k --ri all_without_clustering --cores 8
 ```
 To perform all steps but protein clustering and read/protein annotation with the KOunt reference databases:
 ```
-snakemake -k --ri --use-conda all_without_reference --cores 8
+snakemake -k --ri all_without_reference --cores 8
 ```
 To perform all steps but protein clustering and RNA abundance quantification:
 ```
-snakemake -k --ri --use-conda all_without_RNA --cores 8
+snakemake -k --ri all_without_RNA --cores 8
 ```
 
 ## Estimated run times and memory usage
