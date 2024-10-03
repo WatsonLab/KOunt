@@ -50,7 +50,7 @@ rm test_fastqs.tar
 ### Install the conda environments
 ```
 conda activate snakemake_mamba
-snakemake --conda-create-envs-only --cores 1
+snakemake --conda-create-envs-only --cores 1 --use-conda
 ```
 ### Test installation
 Leave the raw reads location in the config at default and perform a dry-run with the reads subsampled from ERR2027889. Then run the pipeline. With 8 cores it should take approximately 20 minutes.
