@@ -37,7 +37,7 @@ If you wish to update these databases, further information on how they were crea
 ```
 conda create -n snakemake_mamba -c conda-forge -c bioconda mamba=1.0.0
 conda activate snakemake_mamba
-mamba install -c bioconda snakemake=7.22.0
+mamba install -c bioconda -c conda-forge snakemake=7.22.0
 ```
 ### Download test data
 Download the test fastqs.
